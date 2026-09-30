@@ -40,8 +40,8 @@ from censor_core.engine import Censor  # noqa: E402
 from censor_core.rules import Rule  # noqa: E402
 from censor_core.walker import censor_request  # noqa: E402
 
-SECRET = "je_suis_un_secret_vraiment_secret"
-SECRET2 = "un_autre_secret_tres_long_42"
+CANARY = "je_suis_un_secret_vraiment_secret"
+CANARY2 = "un_autre_secret_tres_long_42"
 WORD = "Sibelga"
 CENSOR = Censor.build(rules=[Rule(WORD, "AcmeCompany", 1)], secrets=[SECRET, SECRET2])
 EMPTY = Censor.build()
@@ -194,16 +194,16 @@ def s1_basic_tasks():
     print("S1  hook fires and the provider receives only the replacement (several auxiliary tasks)")
     for task in ("compression", "title_generation", "session_search", "approval"):
         with Proto() as p:
-            aux(task, [{"role": "system", "content": "sys"}, {"role": "user", "content": f"{WORD} and {SECRET}"}])
+            aux(task, [{"role": "system", "content": "sys"}, {"role": "user", "content": f"{WORD} and {CANARY}"}])
         b = last_body()
-        check(f"task={task}", SECRET not in b and WORD not in b and "[SECRET]" in b and "AcmeCompany" in b,
+        check(f"task={task}", CANARY not in b and WORD not in b and "[SECRET]" in b and "AcmeCompany" in b,
               f"pre={p.pre_calls} post={p.post_calls}")
 
 
 def s2_callers_objects_untouched():
     print("S2  the caller's own message objects are left untouched")
     for restore in (False, True):
-        msgs = [{"role": "system", "content": "sys"}, {"role": "user", "content": f"x {SECRET} y"}]
+        msgs = [{"role": "system", "content": "sys"}, {"role": "user", "content": f"x {CANARY} y"}]
         snapshot = copy.deepcopy(msgs)
         with Proto(restore=restore):
             aux("compression", msgs)
@@ -220,15 +220,15 @@ def s3_shapes():
     img = "data:image/png;base64," + "A" * 400
     shapes = [
         ("parts list with image", [{"role": "user", "content": [
-            {"type": "text", "text": f"see {SECRET}"}, {"type": "image_url", "image_url": {"url": img}}]}]),
+            {"type": "text", "text": f"see {CANARY}"}, {"type": "image_url", "image_url": {"url": img}}]}]),
         ("assistant tool_calls + None content + tool msg", [
-            {"role": "user", "content": f"run {SECRET}"},
+            {"role": "user", "content": f"run {CANARY}"},
             {"role": "assistant", "content": None, "tool_calls": [
-                {"id": "call_1", "type": "function", "function": {"name": "f", "arguments": json.dumps({"p": SECRET})}}]},
-            {"role": "tool", "tool_call_id": "call_1", "content": f"out {SECRET}"}]),
+                {"id": "call_1", "type": "function", "function": {"name": "f", "arguments": json.dumps({"p": CANARY})}}]},
+            {"role": "tool", "tool_call_id": "call_1", "content": f"out {CANARY}"}]),
         ("no secret at all", [{"role": "user", "content": "nothing to hide"}]),
         ("empty content", [{"role": "user", "content": ""}]),
-        ("unicode + json escapes", [{"role": "user", "content": f"é {json.dumps(SECRET)} ☃"}]),
+        ("unicode + json escapes", [{"role": "user", "content": f"é {json.dumps(CANARY)} ☃"}]),
     ]
     for name, msgs in shapes:
         before = copy.deepcopy(msgs)
@@ -237,7 +237,7 @@ def s3_shapes():
                 aux("compression", msgs)
             b = last_body()
             sent = json.loads(b)
-            ok = SECRET not in b and msgs == before and isinstance(sent.get("messages"), list)
+            ok = CANARY not in b and msgs == before and isinstance(sent.get("messages"), list)
             if name.startswith("parts"):
                 ok = ok and img in b
             if name.startswith("assistant"):
@@ -251,7 +251,7 @@ def s4_failure_is_isolated():
     print("S4  a failing hook never breaks the auxiliary call (fail-open, as documented by Hermes)")
     with Proto(boom=True):
         try:
-            r = aux("compression", [{"role": "user", "content": f"x {SECRET}"}])
+            r = aux("compression", [{"role": "user", "content": f"x {CANARY}"}])
             check("call returns normally when the hook raises", r is not None)
         except Exception as exc:
             check("call returns normally when the hook raises", False, type(exc).__name__)
@@ -262,19 +262,19 @@ def s5_retry():
     with GOT_LOCK:
         n0 = len(GOT)
     FAIL_FIRST["n"] = 1
-    msgs = [{"role": "user", "content": f"retry {SECRET}"}]
+    msgs = [{"role": "user", "content": f"retry {CANARY}"}]
     with Proto() as p:
         aux("compression", msgs)
     with GOT_LOCK:
         bodies = GOT[n0:]
     check("at least 2 attempts observed", len(bodies) >= 2, f"{len(bodies)} attempts")
-    check("no attempt carries the secret", not any(SECRET in b for b in bodies))
-    check("caller's dict restored", msgs[0]["content"] == f"retry {SECRET}")
+    check("no attempt carries the secret", not any(CANARY in b for b in bodies))
+    check("caller's dict restored", msgs[0]["content"] == f"retry {CANARY}")
 
 
 def s6_streaming():
     print("S6  streaming auxiliary call (stream=True)")
-    msgs = [{"role": "user", "content": f"stream {SECRET}"}]
+    msgs = [{"role": "user", "content": f"stream {CANARY}"}]
     with Proto() as p:
         stream = aux("moa_aggregator", msgs, stream=True)
         got_before_iter = None
@@ -282,14 +282,14 @@ def s6_streaming():
             got_before_iter = len(GOT)
         list(stream)
     b = last_body()
-    check("provider received only the replacement", SECRET not in b and "[SECRET]" in b,
+    check("provider received only the replacement", CANARY not in b and "[SECRET]" in b,
           f"pre={p.pre_calls} post={p.post_calls}")
-    check("caller's dict restored", msgs[0]["content"] == f"stream {SECRET}")
+    check("caller's dict restored", msgs[0]["content"] == f"stream {CANARY}")
 
 
 def s7_async():
     print("S7  asynchronous auxiliary call")
-    msgs = [{"role": "user", "content": f"async {SECRET}"}]
+    msgs = [{"role": "user", "content": f"async {CANARY}"}]
 
     async def go():
         return await async_call_llm("compression", provider="custom", base_url=BASE, api_key="fake-key",
@@ -297,9 +297,9 @@ def s7_async():
     with Proto() as p:
         asyncio.run(go())
     b = last_body()
-    check("provider received only the replacement", SECRET not in b and "[SECRET]" in b,
+    check("provider received only the replacement", CANARY not in b and "[SECRET]" in b,
           f"pre={p.pre_calls} post={p.post_calls}")
-    check("caller's dict restored", msgs[0]["content"] == f"async {SECRET}")
+    check("caller's dict restored", msgs[0]["content"] == f"async {CANARY}")
 
 
 def s8_concurrency():
@@ -310,7 +310,7 @@ def s8_concurrency():
 
     def worker(i):
         for j in range(5):
-            s = SECRET if (i + j) % 2 == 0 else SECRET2
+            s = CANARY if (i + j) % 2 == 0 else CANARY2
             msgs = [{"role": "user", "content": f"w{i}-{j} {s} {WORD}"}]
             try:
                 aux("compression", msgs)
@@ -328,7 +328,7 @@ def s8_concurrency():
     check("no exception", not errors, errors[:1] and errors[0])
     check("80 requests received", len(bodies) == 80, str(len(bodies)))
     check("no secret and no rule word reached the provider",
-          not any(SECRET in b or SECRET2 in b or WORD in b for b in bodies))
+          not any(CANARY in b or CANARY2 in b or WORD in b for b in bodies))
     check("all 80 caller dicts restored", len(restored_ok) == 80 and all(restored_ok))
     check("saved map empty afterwards (no leak of state)", not p.saved, f"{len(p.saved)} left")
     print(f"  [info] wall time {dt:.2f}s")
@@ -352,7 +352,7 @@ def make_text(size, rnd, words):
         parts.append(line)
         total += len(line)
     for _ in range(20):
-        parts.insert(rnd.randrange(len(parts)), SECRET + " ")
+        parts.insert(rnd.randrange(len(parts)), CANARY + " ")
     return "".join(parts)
 
 
@@ -380,7 +380,7 @@ def p1_engine_cost():
 
 
 def timed_calls(n, payload_chars, hook_factory):
-    text = ("lorem ipsum dolor sit amet " * (payload_chars // 27 + 1))[:payload_chars] + f" {SECRET}"
+    text = ("lorem ipsum dolor sit amet " * (payload_chars // 27 + 1))[:payload_chars] + f" {CANARY}"
     times = []
     ctx = hook_factory()
     with ctx:
