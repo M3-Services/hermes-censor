@@ -64,6 +64,7 @@ sessions and refresh: [`docs/KEEPASSXC.md`](docs/KEEPASSXC.md).
 | `/censor` | state, **exact scope read** from the vault, warnings, activity (never a value) |
 | `/censor unlock` / `refresh` / `forget` / `rules` | (re)load / forget the secrets, reload the rules |
 | `hermes censor status` / `check-rules` / `test-unlock` / `mask` | the same checks from a terminal |
+| `hermes censor selftest` | does `censor_auxiliary_calls` still work on this Hermes? (run it after a Hermes update) |
 | `hermes plugins list` | is the plugin enabled? (a disabled plugin cannot warn you) |
 
 ## Uninstall
@@ -83,9 +84,13 @@ bash run_tests.sh tests --ignore=tests/integration        # unit + real KeePassX
 python bench/bench_engine.py                              # engine benchmark (fictional data)
 ```
 
-If you use `censor_auxiliary_calls`, rerun `tests/integration/test_hermes_aux.py` after every Hermes update: the option
-relies on an undocumented Hermes behaviour, and those tests are the only thing that notices when it disappears.
-`bench/experiment_aux_hook.py` is the safety/performance experiment behind that option (needs the Hermes sources).
+If you use `censor_auxiliary_calls`, run **`hermes censor selftest`** after every Hermes update: the option relies on an
+undocumented Hermes behaviour and nothing else notices when it disappears (`tests/integration/test_hermes_aux.py` checks
+the same thing for developers). `bench/experiment_aux_hook.py` is the safety/performance experiment behind the option.
+
+`tests/test_install_scan.py` runs Hermes' own install scanner on the tree (needs the Hermes sources, `HERMES_SRC`):
+a critical finding would make `hermes plugins install/update` refuse the plugin. GitHub Actions
+(`.github/workflows/tests.yml`) runs the unit tests on Linux and Windows.
 
 Integration tests with the **real Hermes** and a local fake provider need a Hermes **test** profile
 (`HERMES_TEST_HOME`, short path, never your real profile), the Python managed by that profile, the Hermes sources

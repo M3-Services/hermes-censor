@@ -45,6 +45,7 @@ every 2 s.
 | `hermes censor status [-v]` | state as seen by a separate CLI process (does not see a running session) |
 | `hermes censor check-rules [file]` | validate a rules file (lines and codes, never the content) |
 | `hermes censor test-unlock` | try the unlock (window or terminal), prints counters only |
+| `hermes censor selftest` | check that `censor_auxiliary_calls` still works on the installed Hermes (local loopback only, random fictional canary; touches none of your rules or secrets). Run it after every Hermes update. Exit code 0 = works, 1 = does not |
 | `hermes censor mask [--secrets]` | filter the text read on stdin |
 
 ## States

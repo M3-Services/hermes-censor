@@ -60,6 +60,25 @@ def restore(saved: Saved) -> None:
             pass
 
 
+def hooks_for(runtime: Any):
+    """The two Hermes hook callbacks (``pre_auxiliary_call``, ``post_auxiliary_call``) bound to ``runtime``.
+
+    Shared by the plugin entry point and by ``hermes censor selftest`` so that the self-test exercises the very same
+    glue. The pre and post hooks of one attempt carry the same base payload (see ``agent/auxiliary_hooks.py``), which
+    is what pairs them.
+    """
+    def key(kwargs):
+        return (kwargs.get("api_request_id"), kwargs.get("retry_count"), kwargs.get("started_at"))
+
+    def pre(**kwargs):
+        runtime.process_auxiliary_before(kwargs.get("request_messages"), key(kwargs))
+
+    def post(**kwargs):
+        runtime.process_auxiliary_after(key(kwargs))
+
+    return pre, post
+
+
 class AuxiliaryEdits:
     """Edits made before an auxiliary call, waiting to be undone after it (thread-safe)."""
 

@@ -463,7 +463,8 @@ class Runtime:
                 findings.append(Finding("AUXILIARY_NOTICE",
                                         "Auxiliary calls (compression, title, vision...) are filtered through an "
                                         "undocumented Hermes side effect that is not verified at run time "
-                                        "(docs/LIMITATIONS.md).", ""))
+                                        "(docs/LIMITATIONS.md).",
+                                        "After every Hermes update run: hermes censor selftest"))
         if self._aux_fail:
             findings.append(Finding("AUX_REQUEST_FAILED_OPEN",
                                     f"The last auxiliary call was sent UNCENSORED (exception {self._aux_fail}).",

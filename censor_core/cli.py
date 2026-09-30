@@ -20,6 +20,8 @@ def register_cli(ctx, runtime_factory: Callable[[tuple], Runtime]) -> None:
         p.add_argument("file", nargs="?")
         sub.add_parser("test-unlock", help="test the KeePassXC unlock (password typed in the terminal or a local "
                                            "window; prints counters only)")
+        sub.add_parser("selftest", help="check that censor_auxiliary_calls still works on this Hermes (local "
+                                        "loopback only; touches none of your rules or secrets)")
         p = sub.add_parser("mask", help="filter the text read on standard input with the rules (and the secrets with --secrets)")
         p.add_argument("--secrets", action="store_true", help="also load the KeePassXC secrets (local prompt)")
 
@@ -34,6 +36,9 @@ def register_cli(ctx, runtime_factory: Callable[[tuple], Runtime]) -> None:
             print(rt.render_status(verbose=True))
             print(NOTE)
             return 0 if outcome.ok else 1
+        if cmd == "selftest":
+            from . import selftest  # lazy: only meaningful inside a Hermes process
+            return selftest.run(ctx.register_hook)
         if cmd == "mask":
             rt = runtime_factory(("askpass", "gui", "tty"))
             if getattr(args, "secrets", False):

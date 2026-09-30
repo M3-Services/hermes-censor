@@ -138,6 +138,32 @@ def test_concurrent_attempts_do_not_mix_up():
     assert not errors and edits.pending() == 0
 
 
+# ---------------------------------------------------------------------------------------------- hook glue
+
+def test_hooks_for_pairs_pre_and_post_of_one_attempt_and_passes_the_messages():
+    from censor_core.auxiliary import hooks_for
+
+    calls = []
+
+    class FakeRuntime:
+        def process_auxiliary_before(self, messages, key):
+            calls.append(("before", messages, key))
+
+        def process_auxiliary_after(self, key):
+            calls.append(("after", key))
+
+    pre, post = hooks_for(FakeRuntime())
+    base = {"api_request_id": "aux-1", "retry_count": 2, "started_at": 5.0, "aux_task": "compression"}
+    msgs = [{"role": "user", "content": "x"}]
+    assert pre(request_messages=msgs, **base) is None and post(**base) is None  # observers: nothing returned
+    (kind1, got, key1), (kind2, key2) = calls
+    assert (kind1, kind2) == ("before", "after") and got is msgs  # the very list, not a copy
+    assert key1 == key2 == ("aux-1", 2, 5.0)
+    calls.clear()
+    pre(request_messages=msgs, **{**base, "retry_count": 3})  # another attempt of the same call: another key
+    assert calls[0][2] != key1
+
+
 # ---------------------------------------------------------------------------------------------- setting + runtime
 
 def test_setting_defaults_to_off_and_validates():

@@ -72,9 +72,12 @@ sight, then cached): negligible against an LLM call that takes seconds.
 Limits, to be read before relying on it:
 
 - **It can silently stop working.** It relies on a Hermes implementation detail. A Hermes release that copies the
-  dictionaries would make the option useless, and the plugin cannot detect that at run time. The integration tests
-  (`tests/integration/test_hermes_aux.py`) fail in that case: rerun them after each Hermes update (see
-  `VALIDATION_REPORT.md`).
+  dictionaries would make the option useless, and the plugin cannot notice that while you work. **Run
+  `hermes censor selftest` after every Hermes update**: one command, no test setup, it makes a real auxiliary call
+  through Hermes to a local loopback server (plain and streaming) and says PASS or FAIL. It uses a random fictional
+  canary and a throw-away rule, never your rules or secrets. The integration tests
+  (`tests/integration/test_hermes_aux.py`) check the same thing, and also that the self-test itself reports a failure
+  when Hermes stops sharing the dictionaries (see `VALIDATION_REPORT.md`).
 - **Only the messages are reachable** (chat `messages`, Responses `input`). A separate `system` / `instructions`
   string (Anthropic native, Responses), tool definitions and other request fields are not handed to the hook in an
   editable form and stay unfiltered. Non-dictionary message objects are skipped.
@@ -115,6 +118,26 @@ applies - the exact moment of display depends on the surface and was **not** ver
 mode in particular); the `original_request` field (the **uncensored** request) that Hermes passes to **other
 plugins'** `llm_execution` middlewares. `pre_api_request` observers, on the other hand, receive the already-censored
 request.
+
+### Local logs: why the plugin does not try to mask them
+
+Protecting local files was never the goal (the plugin protects what goes to the **provider**), but the question
+came up, so the only supported way was evaluated: `ctx.register_redaction_patterns`, the plugin API through which
+Hermes lets a plugin add patterns to its log redaction. It was tried on fictional values in an isolated profile and
+is **not suitable** for exact secret values:
+
+- a matched token is masked with the first 6 and last 4 characters left visible (`je_sui...cret`), so part of the
+  secret still reaches `agent.log`;
+- a pattern must start with at least 2 *literal* characters: a secret that begins with a special character is
+  refused, and Hermes then **writes the refused pattern, i.e. the secret, in a WARNING log line**;
+- there is no removal API: a pattern lives until the process ends, even after `/censor forget`;
+- the start of the typed message is logged truncated to 80 characters, so a cut-off secret no longer matches anything.
+
+Masking the logs any other way would mean reaching into Hermes internals (for example its exact-value vault
+redaction, which is not a plugin API) or attaching filters to Hermes' log handlers, which is outside the plugin
+framework, so it is deliberately not done. What would fix it is an upstream plugin API that redacts **exact values**
+with a fixed replacement (see `TODO.md`). Until then, the typed secret stays in `agent.log` (start of the message) and
+in `state.db`; delete the session if that matters.
 
 ## 5. Content deliberately left unmodified
 

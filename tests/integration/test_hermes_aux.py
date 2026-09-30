@@ -128,6 +128,54 @@ def test_a_failing_filter_never_breaks_the_auxiliary_call_and_is_reported(env, m
         provider.close()
 
 
+def _selftest_ctx():
+    from hermes_cli.plugins import PluginContext, PluginManifest, get_plugin_manager
+    manager = get_plugin_manager()
+    saved = {name: list(manager._hooks.get(name, [])) for name in ("pre_auxiliary_call", "post_auxiliary_call")}
+    return PluginContext(PluginManifest(name="censor-selftest-probe"), manager), manager, saved
+
+
+def _forget_selftest_hooks(manager, saved):
+    for name, callbacks in saved.items():
+        manager._hooks[name] = callbacks
+
+
+def test_selftest_passes_on_this_hermes(env):
+    from censor_core import selftest
+    ctx, manager, saved = _selftest_ctx()
+    out = []
+    try:
+        assert selftest.run(ctx.register_hook, out.append) == 0, "\n".join(out)
+    finally:
+        _forget_selftest_hooks(manager, saved)
+    text = "\n".join(out)
+    assert "[PASS] plain call" in text and "[PASS] streaming call" in text and "Result: OK" in text
+
+
+def test_selftest_notices_when_hermes_stops_sharing_the_message_dicts(env, monkeypatch):
+    """The scenario the selftest exists for: a Hermes release that copies the dictionaries handed to the hook."""
+    import copy
+
+    import agent.auxiliary_hooks as aux_hooks
+    from censor_core import selftest
+    real_fire = aux_hooks._fire
+
+    def fire_with_copies(name, **payload):
+        if name == "pre_auxiliary_call":
+            payload["request_messages"] = copy.deepcopy(payload["request_messages"])
+        return real_fire(name, **payload)
+
+    monkeypatch.setattr(aux_hooks, "_fire", fire_with_copies)
+    ctx, manager, saved = _selftest_ctx()
+    out = []
+    try:
+        assert selftest.run(ctx.register_hook, out.append) == 1
+    finally:
+        _forget_selftest_hooks(manager, saved)
+    text = "\n".join(out)
+    assert "[FAIL] plain call" in text and "UNFILTERED" in text and "Result: FAILED" in text
+
+
 def test_turning_the_setting_off_stops_the_filtering_without_a_restart(env):
     import yaml
     rt = env["rt"]

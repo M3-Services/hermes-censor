@@ -325,7 +325,7 @@ def test_failopen_is_real_and_is_detected(env):
     import sys
     # second layer switched off to isolate the middleware: otherwise transform_tool_result would already have censored the tool result
     rt = _set_plugin_setting(env, enabled=True, censor_tool_results=False)
-    runtime_module = next(m for n, m in sys.modules.items() if n.endswith("censor_core.runtime"))
+    runtime_module = sys.modules[type(rt).__module__]  # the copy Hermes loaded, not one pytest may have imported
     real = runtime_module.censor_request
 
     def boom(request, censor):
@@ -386,7 +386,7 @@ def test_defense_in_depth_tool_result_layer_survives_a_middleware_failure(env):
     came from a tool (a secret typed by the user, however, would leak: see LIMITATIONS.md)."""
     import sys
     rt = _set_plugin_setting(env, enabled=True, censor_tool_results=True)
-    runtime_module = next(m for n, m in sys.modules.items() if n.endswith("censor_core.runtime"))
+    runtime_module = sys.modules[type(rt).__module__]  # the copy Hermes loaded, not one pytest may have imported
     real = runtime_module.censor_request
 
     def boom(request, censor):

@@ -16,6 +16,7 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
+from .censor_core.auxiliary import hooks_for
 from .censor_core.config import parse_settings
 from .censor_core.runtime import Runtime
 
@@ -66,15 +67,7 @@ def register(ctx) -> None:
     def on_transform_tool_result(**kwargs):
         return runtime.process_tool_result(kwargs.get("result"))
 
-    def _aux_key(kwargs):
-        # the pre and post hooks of one attempt carry the same base payload (see agent/auxiliary_hooks.py)
-        return (kwargs.get("api_request_id"), kwargs.get("retry_count"), kwargs.get("started_at"))
-
-    def on_pre_auxiliary_call(**kwargs):
-        runtime.process_auxiliary_before(kwargs.get("request_messages"), _aux_key(kwargs))
-
-    def on_post_auxiliary_call(**kwargs):
-        runtime.process_auxiliary_after(_aux_key(kwargs))
+    on_pre_auxiliary_call, on_post_auxiliary_call = hooks_for(runtime)
 
     ctx.register_middleware("llm_request", on_llm_request)
     ctx.register_hook("transform_tool_result", on_transform_tool_result)

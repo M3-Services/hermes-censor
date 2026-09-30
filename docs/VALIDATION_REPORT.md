@@ -36,6 +36,11 @@ outside the chat. Chosen adaptation: no automatic unlock (except key-file-only, 
 | after adding `censor_auxiliary_calls`: whole `tests/integration/` incl. the new `test_hermes_aux.py` (10 tests), isolated profile, Python 3.11.16 | real Hermes, local fake provider | **28 passed, 2 skipped** (Anthropic SDK not installed in that Python) |
 | real session, option on, `/compress` with a rule word inside the compacted region, summary read back from `state.db` | Hermes v0.21.x on Windows, real provider | **OK**: every model-written section of the summary carries the replacement (without the option the word had appeared in clear) |
 | Hermes install scanner (`tools/plugin_guard.py`) on the working tree, then `hermes plugins update` from GitHub | real Hermes | first push **blocked** (a `SECRET = "..."` constant in `bench/`, critical); after renaming it: verdict *safe* locally (11 medium findings) and the update **installed** |
+| v0.2.0: unit tests incl. the install-scanner gate (`tests/test_install_scan.py`) and the hook-glue test, Python 3.11.16 | Hermes sources of the installed version | **163 passed** |
+| v0.2.0: `tests/integration/test_hermes_aux.py`, isolated profile, Python 3.11.16 | real Hermes, local fake provider | **12 passed**, incl. `hermes censor selftest` reporting OK, and reporting FAIL when Hermes is made to copy the message dictionaries |
+| v0.2.0: the whole suite in one run (`bash run_tests.sh tests`, with `HERMES_SRC` and `HERMES_TEST_HOME`) | real Hermes, Python 3.11.16 | **193 passed, 2 skipped** (Anthropic SDK not installed in that Python) |
+| v0.2.0: real `python -m hermes_cli.main censor selftest` in an isolated profile (Hermes 0.21.4) | real Hermes | **OK** (plain and streaming) |
+| the install-scanner gate fed the old blocking constant (`SECRET = "..."` in `bench/`) | real Hermes scanner | fails with `critical hardcoded_secret`, as intended |
 | `hermes plugins doctor <path> --ci` | real Hermes | **OK** ("runtime discovery, manifest parsing, import, and registration passed", 1 hook) |
 | real `hermes plugins install` cycle (local Git repository) -> `enable` -> `hermes censor status/check-rules/mask --secrets` -> `disable` -> `remove` | real Hermes, isolated test profile | **OK** |
 
