@@ -1,5 +1,5 @@
 name: hermes-censor
-version: 0.1.0
+version: 0.2.0
 description: >-
   Hermes Censor: replaces or removes, before the provider call, user-defined strings (local rules file) and the
   secret values of a local KeePassXC database. Practical, local protection; fail-open (see

@@ -1,6 +1,6 @@
 [project]
 name = "hermes-censor"
-version = "0.1.0"
+version = "0.2.0"
 description = "Hermes Agent plugin: anonymises the content sent to LLM providers (local rules + KeePassXC secrets)."
 requires-python = ">=3.11"
 dependencies = []
