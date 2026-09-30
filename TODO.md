@@ -18,8 +18,10 @@
 - [ ] Verify the "not verified" paths of the matrix (Bedrock, native Gemini, gateway/cron, non-streaming, MoA, multimodal)
 - [ ] Ask Hermes upstream to apply `llm_request` middleware to auxiliary calls (compression, title, vision): confirmed leak on
       a real session; the opt-in `censor_auxiliary_calls` setting is only a workaround on an undocumented behaviour
-- [ ] Validate `censor_auxiliary_calls` on a real session (enable, restart Hermes, `/compress` with a rule word, check the
-      summary in `state.db`); rerun `tests/integration/test_hermes_aux.py` after every Hermes update
+- [x] Validated `censor_auxiliary_calls` on a real session (2026-09-30): rule word in the compacted region came out as its
+      replacement in every model-written section of the `/compress` summary. Still to do: same check with a typed
+      *secret* inside the compacted region (only the rule word was in it), and rerun
+      `tests/integration/test_hermes_aux.py` after every Hermes update
 - [ ] `censor_auxiliary_calls`: not exercised yet with the native Anthropic / Responses clients, the real `ContextCompressor`
       and gateway/cron; a separate `system`/`instructions` string is not reachable from the hook
 - [ ] Filter local logs/state? (`agent.log` `turn_context` line and `state.db` keep the typed secret in clear)

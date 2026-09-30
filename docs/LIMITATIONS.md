@@ -92,7 +92,16 @@ Limits, to be read before relying on it:
 - Not exercised: the real `ContextCompressor` / title generator end to end, auxiliary calls through the native
   Anthropic or Responses clients, and gateway/cron surfaces. To check it on your own installation: turn the option on,
   restart Hermes, run `/compress` in a session that contains a rule word, then look at the summary stored in
-  `state.db`: the rule word must appear as its replacement in the model-written part.
+  `state.db`: the rule word must appear as its replacement in the model-written part. The rule word, the typed secret
+  and the compaction itself must all sit in the region that gets compacted: Hermes keeps the first and the last turns
+  untouched, so put the sensitive messages in the middle of a long enough session.
+- **Checked once on a real session** (Hermes v0.21.x, Windows, option on, `/compress`): the rule word that was inside
+  the compacted region appeared as its replacement in every model-written section of the summary (Goal, Completed
+  Actions, Resolved Questions, Detailed Session Log), whereas without the option it had appeared in clear. Two
+  sections are written by Hermes itself, not by the model (Historical Task Snapshot and "User Messages (verbatim)"):
+  they quote the original text, stay local, and go through `llm_request` when sent back. A typed *secret* was not in
+  the compacted region in that test, so it was not exercised end to end on a real session (it is in the integration
+  tests).
 
 ## 4. What may already have been displayed, logged or stored before censoring
 
