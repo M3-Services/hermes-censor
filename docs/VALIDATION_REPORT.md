@@ -48,9 +48,11 @@ Note: the project was translated to English and renamed (`censeur` -> `censor`, 
 first validation. The 141 unit tests, the 20 integration tests, `hermes plugins doctor --ci` and the
 install -> enable -> `hermes censor status` -> disable -> remove cycle were all re-run successfully under the new names.
 
-Platforms actually tested: **Windows 11 only.** Linux: the engine/parser were not run on Linux (the available WSL only
-has Python 3.8, below the 3.11 minimum), the Linux `keepassxc-cli` and the `/dev/tty` terminal channel are
-**untested**; Tk was driven on Windows only; the Windows terminal channel is not automatically tested.
+Platforms actually tested: **Windows 11** for everything, including the real Hermes. **Linux** (GitHub Actions, Ubuntu
+runner, Python 3.11 and 3.13, from v0.2.0): the unit tests pass there, 157 passed and 6 skipped (Tk has no display, and
+the install-scanner gate needs the Hermes sources), including the real-KeePassXC tests with Ubuntu's `keepassxc-cli`.
+Still **untested on Linux**: the Flatpak `keepassxc-cli`, the `/dev/tty` terminal channel, the Tk prompt, and the
+integration with a real Hermes. Tk was driven on Windows only; the Windows terminal channel is not automatically tested.
 
 Hermes install scanner: *caution* verdict - 3 intentional `subprocess` calls in `censor_core/`, plus findings in
 `tests/` (fictional constants, `subprocess`). One HIGH finding (a U+FEFF literal in the parser) was fixed. Installing

@@ -21,8 +21,9 @@
 - [x] Whole project translated to English (package `censor_core`, plugin `hermes-censor`)
 
 ## To do (non-blocking)
-- [ ] Linux: the CI now runs the unit tests there; check its first results, then test by hand the Flatpak
-      `keepassxc-cli`, the terminal channel (`/dev/tty`) and a missing Tk
+- [ ] Linux: the CI is green there (157 unit tests incl. the real-KeePassXC ones with Ubuntu's `keepassxc-cli`; Tk tests
+      skipped, no display). Still to test by hand: the Flatpak `keepassxc-cli`, the terminal channel (`/dev/tty`), the Tk
+      prompt, and the Hermes integration on Linux
 - [ ] Choose a license (MIT suggested: same as Hermes) and add `LICENSE`; needed before the Hermes catalog
 - [ ] Publish to the Hermes catalog (public repo, tagged release, pinned SHA)
 - [ ] Verify the "not verified" paths of the matrix (Bedrock, native Gemini, gateway/cron, non-streaming, MoA, multimodal)
