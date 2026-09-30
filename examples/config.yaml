@@ -1,0 +1,26 @@
+# Merge into <HERMES_HOME>/config.yaml - NO secret here: only paths and selections.
+plugins:
+  enabled:
+    - hermes-censor
+  entries:
+    hermes-censor:
+      settings:
+        # rules_file: /path/to/rules.txt   # default: <HERMES_HOME>/plugin-data/hermes-censor/rules.txt
+        ignore_case: false            # plain rules ignore case (secrets always stay case-sensitive)
+        secret_replacement: "[SECRET]"
+        censor_tool_results: true     # also filter tool results before the history (transform_tool_result)
+        min_secret_length: 6          # shorter = not loaded, DEGRADED state
+        max_age_minutes: 0            # 0 = loaded secrets only go stale when the database changes
+        keepassxc:
+          database: "C:/Users/alice/Documents/vault.kdbx"      # path of the .kdbx file
+          # cli: "C:/Program Files/KeePassXC/keepassxc-cli.exe"  # default: search PATH, then the standard location
+          # keyfile: "C:/Users/alice/vault.keyx"                 # if the database also uses a key file
+          unlock: prompt              # prompt (default): password typed in a local window, outside the chat
+          # SELECTION REQUIRED: only these parts of the vault are read (paths relative to the root group)
+          groups: ["Hermes"]          # subgroups included by default (recursive: true)
+          # entries: ["Servers/prod-db"]
+          # exclude: ["Hermes/Personal"]
+          # select_all: false         # true = every entry except the recycle bin (discouraged)
+          fields: ["Password", "@protected"]   # @protected = every field marked "protected" in KeePassXC
+          include_history: false
+          include_recycle_bin: false

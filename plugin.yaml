@@ -1,0 +1,41 @@
+name: hermes-censor
+version: 0.1.0
+description: >-
+  Hermes Censor: replaces or removes, before the provider call, user-defined strings (local rules file) and the
+  secret values of a local KeePassXC database. Practical, local protection; fail-open (see
+  docs/LIMITATIONS.md); no telemetry and no additional service.
+author: M3-Services
+kind: standalone
+provides_hooks:
+  - transform_tool_result
+config_schema:
+  enabled:
+    type: bool
+    default: true
+    description: "Enable filtering (false = INACTIVE)."
+  rules_file:
+    type: str
+    description: "Rules file (one <pattern>:<replacement> rule per line). Default: <HERMES_HOME>/plugin-data/hermes-censor/rules.txt"
+  ignore_case:
+    type: bool
+    default: false
+    description: "Plain rules ignore case (secrets always stay case-sensitive)."
+  secret_replacement:
+    type: str
+    default: "[SECRET]"
+    description: "Text that replaces a secret value."
+  censor_tool_results:
+    type: bool
+    default: true
+    description: "Also filter tool results before they are added to the conversation (transform_tool_result)."
+  min_secret_length:
+    type: int
+    default: 6
+    description: "Minimum length of a KeePassXC secret; shorter = not loaded (DEGRADED state)."
+  max_age_minutes:
+    type: float
+    default: 0
+    description: "Consider loaded secrets stale after N minutes (0 = never)."
+  keepassxc:
+    type: dict
+    description: "KeePassXC connector (database, groups, entries, exclude, fields, unlock, keyfile, cli, askpass...). See docs/KEEPASSXC.md. Never contains a secret value."

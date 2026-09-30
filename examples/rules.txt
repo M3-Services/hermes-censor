@@ -1,0 +1,12 @@
+# Hermes Censor plain rules - one rule per line: <pattern>:<replacement>
+# (see docs/RULES.md). This file is NEVER used for KeePassXC secrets.
+#
+# Replace:
+fox:animal
+# Delete (empty replacement):
+wolf:
+# Colons in the pattern or the replacement: escape them with \:
+https\://intranet.example.test:https://[internal]
+# Literal backslash: \ ; a leading "#" in a pattern: \#
+C\:\Users\alice:[user-folder]
+\#internal:[label]
