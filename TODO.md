@@ -8,7 +8,8 @@
 - [x] `tests/test_install_scan.py`: runs Hermes' own install scanner on the tree (critical/high findings fail the test)
 - [x] GitHub Actions: unit tests on Linux and Windows, Python 3.11 and 3.13 (`.github/workflows/tests.yml`)
 - [x] Version 0.2.0 (tag `v0.2.0`)
-- [x] MIT license (`LICENSE`; added right after the `v0.2.0` tag, so the tag itself does not contain it)
+- [x] MIT license (`LICENSE`); `v0.2.0` predates it, so version 0.2.1 (tag `v0.2.1`, after the merge) is the first
+      tagged release that contains it
 
 ## Done (v0.1.0)
 - [x] Verified the Hermes contracts (docs + v0.21.5 source) and KeePassXC CLI 2.7.12
