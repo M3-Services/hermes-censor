@@ -103,4 +103,4 @@ Architecture: `censor_core/engine.py` (index + resolution), `walker.py` (request
 
 ## License
 
-Not chosen yet: the maintainers must add a license before the first release.
+[MIT](LICENSE), the same license as Hermes Agent.

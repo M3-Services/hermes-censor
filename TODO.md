@@ -7,7 +7,8 @@
 - [x] `hermes censor selftest`: checks on demand that the auxiliary mechanism still works on the installed Hermes
 - [x] `tests/test_install_scan.py`: runs Hermes' own install scanner on the tree (critical/high findings fail the test)
 - [x] GitHub Actions: unit tests on Linux and Windows, Python 3.11 and 3.13 (`.github/workflows/tests.yml`)
-- [x] Version 0.2.0
+- [x] Version 0.2.0 (tag `v0.2.0`)
+- [x] MIT license (`LICENSE`; added right after the `v0.2.0` tag, so the tag itself does not contain it)
 
 ## Done (v0.1.0)
 - [x] Verified the Hermes contracts (docs + v0.21.5 source) and KeePassXC CLI 2.7.12
@@ -24,7 +25,6 @@
 - [ ] Linux: the CI is green there (157 unit tests incl. the real-KeePassXC ones with Ubuntu's `keepassxc-cli`; Tk tests
       skipped, no display). Still to test by hand: the Flatpak `keepassxc-cli`, the terminal channel (`/dev/tty`), the Tk
       prompt, and the Hermes integration on Linux
-- [ ] Choose a license (MIT suggested: same as Hermes) and add `LICENSE`; needed before the Hermes catalog
 - [ ] Publish to the Hermes catalog (public repo, tagged release, pinned SHA)
 - [ ] Verify the "not verified" paths of the matrix (Bedrock, native Gemini, gateway/cron, non-streaming, MoA, multimodal)
 - [ ] Ask Hermes upstream to apply `llm_request` middleware to auxiliary calls (compression, title, vision): confirmed leak on
