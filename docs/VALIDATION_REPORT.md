@@ -34,6 +34,8 @@ outside the chat. Chosen adaptation: no automatic unlock (except key-file-only, 
 | integration with the real Hermes + local fake provider (`tests/integration/`) | Python 3.14.7 managed by Hermes | **20 passed** |
 | after adding `censor_auxiliary_calls`: unit tests (`tests/test_auxiliary.py` included), Python 3.11.16 (the Hermes venv's) | Hermes sources of the installed version | **161 passed** |
 | after adding `censor_auxiliary_calls`: whole `tests/integration/` incl. the new `test_hermes_aux.py` (10 tests), isolated profile, Python 3.11.16 | real Hermes, local fake provider | **28 passed, 2 skipped** (Anthropic SDK not installed in that Python) |
+| real session, option on, `/compress` with a rule word inside the compacted region, summary read back from `state.db` | Hermes v0.21.x on Windows, real provider | **OK**: every model-written section of the summary carries the replacement (without the option the word had appeared in clear) |
+| Hermes install scanner (`tools/plugin_guard.py`) on the working tree, then `hermes plugins update` from GitHub | real Hermes | first push **blocked** (a `SECRET = "..."` constant in `bench/`, critical); after renaming it: verdict *safe* locally (11 medium findings) and the update **installed** |
 | `hermes plugins doctor <path> --ci` | real Hermes | **OK** ("runtime discovery, manifest parsing, import, and registration passed", 1 hook) |
 | real `hermes plugins install` cycle (local Git repository) -> `enable` -> `hermes censor status/check-rules/mask --secrets` -> `disable` -> `remove` | real Hermes, isolated test profile | **OK** |
 

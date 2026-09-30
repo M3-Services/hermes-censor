@@ -83,6 +83,10 @@ bash run_tests.sh tests --ignore=tests/integration        # unit + real KeePassX
 python bench/bench_engine.py                              # engine benchmark (fictional data)
 ```
 
+If you use `censor_auxiliary_calls`, rerun `tests/integration/test_hermes_aux.py` after every Hermes update: the option
+relies on an undocumented Hermes behaviour, and those tests are the only thing that notices when it disappears.
+`bench/experiment_aux_hook.py` is the safety/performance experiment behind that option (needs the Hermes sources).
+
 Integration tests with the **real Hermes** and a local fake provider need a Hermes **test** profile
 (`HERMES_TEST_HOME`, short path, never your real profile), the Python managed by that profile, the Hermes sources
 (`HERMES_SRC`) and `HERMES_DISABLE_LAZY_INSTALLS=1`. See [`docs/VALIDATION_REPORT.md`](docs/VALIDATION_REPORT.md)

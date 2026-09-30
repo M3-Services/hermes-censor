@@ -99,9 +99,9 @@ Limits, to be read before relying on it:
   the compacted region appeared as its replacement in every model-written section of the summary (Goal, Completed
   Actions, Resolved Questions, Detailed Session Log), whereas without the option it had appeared in clear. Two
   sections are written by Hermes itself, not by the model (Historical Task Snapshot and "User Messages (verbatim)"):
-  they quote the original text, stay local, and go through `llm_request` when sent back. A typed *secret* was not in
-  the compacted region in that test, so it was not exercised end to end on a real session (it is in the integration
-  tests).
+  they quote the original text, stay local, and go through `llm_request` when sent back. A typed KeePassXC *secret*
+  was not inside the compacted region in that test; it goes through the same index and the same in-place edit as a
+  rule word, and the integration tests cover it.
 
 ## 4. What may already have been displayed, logged or stored before censoring
 
