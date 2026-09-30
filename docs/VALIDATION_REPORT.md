@@ -32,6 +32,8 @@ outside the chat. Chosen adaptation: no automatic unlock (except key-file-only, 
 | unit + real KeePassXC (parser, engine, walker, connector, helper, runtime, vault e2e, Tk, examples) | Python 3.11.16 | **141 passed** |
 | same | Python 3.14.7 | **140 passed, 1 skipped** (`yaml` missing outside a Hermes profile) |
 | integration with the real Hermes + local fake provider (`tests/integration/`) | Python 3.14.7 managed by Hermes | **20 passed** |
+| after adding `censor_auxiliary_calls`: unit tests (`tests/test_auxiliary.py` included), Python 3.11.16 (the Hermes venv's) | Hermes sources of the installed version | **161 passed** |
+| after adding `censor_auxiliary_calls`: whole `tests/integration/` incl. the new `test_hermes_aux.py` (10 tests), isolated profile, Python 3.11.16 | real Hermes, local fake provider | **28 passed, 2 skipped** (Anthropic SDK not installed in that Python) |
 | `hermes plugins doctor <path> --ci` | real Hermes | **OK** ("runtime discovery, manifest parsing, import, and registration passed", 1 hook) |
 | real `hermes plugins install` cycle (local Git repository) -> `enable` -> `hermes censor status/check-rules/mask --secrets` -> `disable` -> `remove` | real Hermes, isolated test profile | **OK** |
 

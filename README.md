@@ -10,7 +10,8 @@ Everything happens inside the plugin: no proxy, no additional service, no networ
 `llm_request` middleware, `transform_tool_result` hook).
 
 > **Practical protection, not a guarantee.** Hermes runs middlewares *fail-open*: a failure lets the request go out
-> uncensored; search is literal; some calls (compression, titles...) do not go through the middleware at all. Read
+> uncensored; search is literal; some calls (compression, titles...) do not go through the middleware at all (an
+> opt-in, experimental setting, `censor_auxiliary_calls`, can cover them: see the limitations). Read
 > [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) and [`docs/CALL_PATHS.md`](docs/CALL_PATHS.md) before relying on it.
 > The plugin runs with Hermes' privileges: **review the code** before trusting it with access to your vault.
 
@@ -20,6 +21,10 @@ Everything happens inside the plugin: no proxy, no additional service, no networ
   and arguments, Responses API input, textual parts of multimodal content, tool descriptions) while
   **preserving the structure**, roles, identifiers, headers and API keys.
 - `transform_tool_result` hook: censors a tool result **before** it is added to the conversation.
+- Optional (`censor_auxiliary_calls: true`, off by default, restart Hermes): also filters the messages of **auxiliary
+  calls** (context compression, session title, vision, approval...), which bypass the middleware. It relies on an
+  **undocumented** Hermes behaviour that a Hermes update could silently remove: read
+  [`docs/LIMITATIONS.md`](docs/LIMITATIONS.md) section 3 first.
 - **ACTIVE / DEGRADED / INACTIVE / ERROR** state with a reason and a repair action: `/censor`, `hermes censor status`.
 - A secret that is not loaded (locked vault, value too short, selection not found, database changed...) yields a
   **DEGRADED** state, never a false sense of full protection.

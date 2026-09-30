@@ -32,17 +32,23 @@ attempt of the main conversation loop (read from the code, confirmed by the test
 
 | # | Path | Status | Evidence |
 |---|---|---|---|
-| 13 | **Auxiliary calls** (context compression, session title, vision, approval, MoA advisors...): `agent.auxiliary_client` | **tested and not covered** (sample: the `compression` task through `call_llm` - the fictional value and the rules' word reach the provider as-is). The other auxiliary tasks were not run one by one: they share the same funnel according to `agent/auxiliary_hooks.py`. | `test_auxiliary_calls_do_NOT_traverse_llm_request` |
+| 13 | **Auxiliary calls** (context compression, session title, vision, approval, MoA advisors...): `agent.auxiliary_client` | **tested and not covered by default** (sample: the `compression` task through `call_llm` - the fictional value and the rules' word reach the provider as-is). **Tested and covered with the opt-in `censor_auxiliary_calls: true`** for the messages of synchronous, retried, streaming and asynchronous `call_llm` / `async_call_llm` calls (tasks `compression`, `title_generation`, `session_search`, `approval`, `moa_aggregator`); a separate `system`/`instructions` string and tool definitions stay unfiltered; relies on an undocumented Hermes behaviour (see `LIMITATIONS.md`). | `test_auxiliary_calls_do_NOT_traverse_llm_request` (option off), `tests/integration/test_hermes_aux.py` (option on) |
 | 14 | `codex_app_server` mode (the whole turn is delegated to a Codex subprocess before the loop) | **not covered according to the code** (`conversation_loop.py`), **not exercised** | - |
 
-### Note on auxiliary calls (a lead that is not shipped)
+Observed outside the test harness (real session, `/compress` then inspection of `state.db`): the compression summary
+and the generated session title contained a rule word in clear, so both auxiliary tasks received unfiltered text
+(details in `LIMITATIONS.md`, section 3).
+
+### Note on auxiliary calls (opt-in, undocumented mechanism)
 
 The official `pre_auxiliary_call` hook fires for every auxiliary attempt but is **observer-only** (return value
 ignored). The experiment `test_experiment_pre_auxiliary_call_hook_is_observer_only` shows that an **in-place
 mutation** of the message dictionaries received by this hook *does* reach the provider (Hermes copies only the list,
-not the dictionaries). This is an undocumented side effect: **the plugin does not use it** (it could stop working
-without warning). The real fix belongs in Hermes: call `apply_llm_request_middleware` from the auxiliary funnel (see
-`LIMITATIONS.md`).
+not the dictionaries). This is an undocumented side effect. The plugin uses it **only if you turn on
+`censor_auxiliary_calls`** (off by default), and undoes its edit afterwards so the caller's objects are left intact;
+the experiment test stays in the suite as a canary for a Hermes change. Limits, measurements and how to check it on
+your installation: `LIMITATIONS.md`, section 3. The real fix belongs in Hermes: call `apply_llm_request_middleware`
+from the auxiliary funnel.
 
 ## Complementary layers
 

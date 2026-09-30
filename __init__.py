@@ -3,6 +3,9 @@
 Hermes surfaces used (all documented):
 - ``register_middleware("llm_request")``: rewrites the provider request before it runs (main filtering);
 - ``register_hook("transform_tool_result")``: filters a tool result before it is added to the conversation;
+- ``register_hook("pre_auxiliary_call" / "post_auxiliary_call")``, only if ``censor_auxiliary_calls`` is on: filters
+  the messages of auxiliary calls (compression, title...) through an UNDOCUMENTED side effect, see
+  ``censor_core/auxiliary.py`` and docs/LIMITATIONS.md;
 - ``register_command("censor")``: the /censor slash command (state, unlock, refresh);
 - ``register_cli_command("censor")``: ``hermes censor status|check-rules|test-unlock|mask``.
 All the logic lives in ``censor_core`` (no dependency on Hermes).
@@ -13,12 +16,13 @@ import logging
 import os
 from typing import Any, Dict, Optional
 
+from .censor_core.config import parse_settings
 from .censor_core.runtime import Runtime
 
 logger = logging.getLogger("hermes-censor")
 
 SETTING_KEYS = ("enabled", "rules_file", "ignore_case", "secret_replacement", "censor_tool_results",
-                "min_secret_length", "max_age_minutes", "keepassxc")
+                "censor_auxiliary_calls", "min_secret_length", "max_age_minutes", "keepassxc")
 _RUNTIME: Optional[Runtime] = None
 
 
@@ -62,8 +66,24 @@ def register(ctx) -> None:
     def on_transform_tool_result(**kwargs):
         return runtime.process_tool_result(kwargs.get("result"))
 
+    def _aux_key(kwargs):
+        # the pre and post hooks of one attempt carry the same base payload (see agent/auxiliary_hooks.py)
+        return (kwargs.get("api_request_id"), kwargs.get("retry_count"), kwargs.get("started_at"))
+
+    def on_pre_auxiliary_call(**kwargs):
+        runtime.process_auxiliary_before(kwargs.get("request_messages"), _aux_key(kwargs))
+
+    def on_post_auxiliary_call(**kwargs):
+        runtime.process_auxiliary_after(_aux_key(kwargs))
+
     ctx.register_middleware("llm_request", on_llm_request)
     ctx.register_hook("transform_tool_result", on_transform_tool_result)
+    # Opt-in: registering these hooks has a cost on every auxiliary call (Hermes builds their payload and runs them in
+    # a worker thread), so they exist only if the setting is on when the plugin loads. Changing it needs a restart.
+    if parse_settings(_settings_provider(ctx)(), _hermes_home())[0].censor_auxiliary_calls:
+        ctx.register_hook("pre_auxiliary_call", on_pre_auxiliary_call)
+        ctx.register_hook("post_auxiliary_call", on_post_auxiliary_call)
+        runtime.aux_hooks_registered = True
     ctx.register_command(
         "censor", handler=lambda raw_args="": runtime.command(raw_args, interactive=True),
         description="Hermes Censor: state, KeePassXC unlock, refresh",
@@ -81,4 +101,7 @@ def _cli_runtime(ctx, channels) -> Runtime:
     def factory(cfg):
         return KeePassXCSource(replace(cfg, channels=tuple(channels)))
 
-    return Runtime(settings_provider=_settings_provider(ctx), home=_hermes_home(), source_factory=factory)
+    runtime = Runtime(settings_provider=_settings_provider(ctx), home=_hermes_home(), source_factory=factory)
+    # A separate CLI process handles no request: the "restart Hermes" finding only makes sense for the live session.
+    runtime.aux_hooks_registered = True
+    return runtime

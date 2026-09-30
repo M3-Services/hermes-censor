@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable, Dict, List, Optional
 
 PLUGIN_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-IGNORE = shutil.ignore_patterns("__pycache__", "tests", ".pytest_cache", "bench", "*.pyc", "run_tests.sh")
+IGNORE = shutil.ignore_patterns("__pycache__", "tests", ".pytest_cache", "bench", "*.pyc", "run_tests.sh", ".git")
 
 TEST_TOOLS_INIT = '''
 import json

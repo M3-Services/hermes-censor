@@ -6,6 +6,8 @@ description: >-
   docs/LIMITATIONS.md); no telemetry and no additional service.
 author: M3-Services
 kind: standalone
+# pre_auxiliary_call / post_auxiliary_call are registered only when censor_auxiliary_calls is on, so they are not
+# declared here (declaring them makes `hermes plugins doctor` warn for everyone who keeps the default).
 provides_hooks:
   - transform_tool_result
 config_schema:
@@ -28,6 +30,10 @@ config_schema:
     type: bool
     default: true
     description: "Also filter tool results before they are added to the conversation (transform_tool_result)."
+  censor_auxiliary_calls:
+    type: bool
+    default: false
+    description: "Opt-in, experimental: also filter auxiliary calls (context compression, session title, vision...) through an undocumented Hermes side effect. Needs a Hermes restart to take effect. See docs/LIMITATIONS.md."
   min_secret_length:
     type: int
     default: 6

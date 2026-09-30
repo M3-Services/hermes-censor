@@ -14,7 +14,7 @@ from .keepassxc import KeePassXCConfig
 from .kpx_helper import DEFAULT_MIN_LENGTH
 
 TOP_KEYS = {"enabled", "rules_file", "ignore_case", "secret_replacement", "censor_tool_results",
-            "max_age_minutes", "min_secret_length", "keepassxc"}
+            "censor_auxiliary_calls", "max_age_minutes", "min_secret_length", "keepassxc"}
 KP_KEYS = {"enabled", "database", "cli", "keyfile", "unlock", "askpass", "groups", "entries", "exclude",
            "select_all", "recursive", "fields", "include_history", "include_recycle_bin", "timeout_seconds",
            "prompt_timeout_seconds"}
@@ -35,6 +35,7 @@ class Settings:
     ignore_case: bool = False
     secret_replacement: str = DEFAULT_SECRET_REPLACEMENT
     censor_tool_results: bool = True
+    censor_auxiliary_calls: bool = False
     max_age_minutes: float = 0
     min_secret_length: int = DEFAULT_MIN_LENGTH
     keepassxc: Optional[KeePassXCConfig] = None
@@ -81,7 +82,8 @@ def parse_settings(raw: Optional[Mapping[str, Any]], home: str) -> Tuple[Setting
     s.enabled = _bool(raw.get("enabled"), "enabled", True, problems)
     s.ignore_case = _bool(raw.get("ignore_case"), "ignore_case", False, problems)
     s.censor_tool_results = _bool(raw.get("censor_tool_results"), "censor_tool_results", True, problems)
-    rf = raw.get("rules_file")
+    s.censor_auxiliary_calls = _bool(raw.get("censor_auxiliary_calls"), "censor_auxiliary_calls", False, problems)
+    rf =raw.get("rules_file")
     if rf is None:
         s.rules_file = os.path.join(home, DEFAULT_RULES_RELATIVE)
     elif isinstance(rf, str) and rf.strip():

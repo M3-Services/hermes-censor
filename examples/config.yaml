@@ -9,6 +9,8 @@ plugins:
         ignore_case: false            # plain rules ignore case (secrets always stay case-sensitive)
         secret_replacement: "[SECRET]"
         censor_tool_results: true     # also filter tool results before the history (transform_tool_result)
+        # censor_auxiliary_calls: false  # opt-in, experimental: also filter compression/title/vision calls (restart Hermes;
+        #                                # read docs/LIMITATIONS.md section 3 first)
         min_secret_length: 6          # shorter = not loaded, DEGRADED state
         max_age_minutes: 0            # 0 = loaded secrets only go stale when the database changes
         keepassxc:

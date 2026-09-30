@@ -16,6 +16,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Mapping, Optional
 
+from .auxiliary import AuxiliaryEdits, edit_in_place
 from .config import Settings, parse_settings
 from .engine import Censor
 from .keepassxc import KeePassXCConfig, KeePassXCSource
@@ -33,7 +34,7 @@ AUTO_RETRY_INTERVAL = 60.0
 DEGRADED_CODES = {
     "CONFIG_INVALID", "RULES_MISSING", "RULES_UNREADABLE", "RULES_INVALID_LINES", "SECRETS_NOT_LOADED",
     "SECRETS_LOAD_FAILED", "SECRETS_INCOMPLETE_SHORT", "SECRETS_INCOMPLETE_NOT_FOUND", "SECRETS_STALE_DB_CHANGED",
-    "SECRETS_STALE_DB_MISSING", "SECRETS_STALE_AGE",
+    "SECRETS_STALE_DB_MISSING", "SECRETS_STALE_AGE", "AUX_RESTART_REQUIRED",
 }
 
 REMINDER = ("Reminder: Hermes is \"fail-open\" (a plugin failure lets the request go out uncensored); search is "
@@ -101,8 +102,13 @@ class Runtime:
         # activity (never any value)
         self._act = {"requests": 0, "tool_results": 0, "last_secret_replacements": 0, "last_rule_replacements": 0,
                      "total_secret_replacements": 0, "total_rule_replacements": 0, "failopen_count": 0,
-                     "last_request_at": None, "signed_blocks_skipped": 0}
+                     "last_request_at": None, "signed_blocks_skipped": 0,
+                     "aux_requests": 0, "aux_last_secret_replacements": 0, "aux_last_rule_replacements": 0,
+                     "aux_total_secret_replacements": 0, "aux_total_rule_replacements": 0, "aux_failopen_count": 0}
         self._fail: Optional[str] = None
+        self._aux_fail: Optional[str] = None
+        self._aux = AuxiliaryEdits()
+        self.aux_hooks_registered = False  # set by the Hermes glue: the hooks exist only if the setting was on at load
         self._logged_signature: Any = None
 
     # ------------------------------------------------------------------------------------------------ settings
@@ -320,6 +326,42 @@ class Runtime:
             self._note_failure(exc)
             return None
 
+    def process_auxiliary_before(self, messages: Any, key: Any) -> None:
+        """Auxiliary call about to go out: filter ``messages`` IN PLACE (undone by ``process_auxiliary_after``)."""
+        try:
+            self._tick()
+            if not self._settings.enabled or not self._settings.censor_auxiliary_calls:
+                return
+            censor = self._censor
+            self._aux_fail = None
+            self._act["aux_requests"] += 1
+            if censor.is_empty:
+                self._set_last_aux(0, 0)
+                return
+            saved, report = edit_in_place(messages, censor)
+            if saved:
+                self._aux.keep(key, saved)
+            self._set_last_aux(report.secret_replacements, report.rule_replacements)
+            self._act["signed_blocks_skipped"] += report.signed_blocks_skipped
+        except Exception as exc:
+            self._aux_fail = type(exc).__name__
+            self._act["aux_failopen_count"] += 1
+            logger.warning("hermes-censor: exception %s while filtering an auxiliary call: it goes out UNCENSORED",
+                           self._aux_fail)
+
+    def process_auxiliary_after(self, key: Any) -> None:
+        """Auxiliary attempt finished (success or failure): give the caller's message objects back as they were."""
+        try:
+            self._aux.undo(key)
+        except Exception as exc:
+            logger.warning("hermes-censor: could not undo an auxiliary edit (%s)", type(exc).__name__)
+
+    def _set_last_aux(self, secrets: int, rules: int) -> None:
+        a = self._act
+        a["aux_last_secret_replacements"], a["aux_last_rule_replacements"] = secrets, rules
+        a["aux_total_secret_replacements"] += secrets
+        a["aux_total_rule_replacements"] += rules
+
     def _set_last(self, secrets: int, rules: int) -> None:
         a = self._act
         a["last_secret_replacements"], a["last_rule_replacements"] = secrets, rules
@@ -411,9 +453,25 @@ class Runtime:
             elif self._stale == "SECRETS_STALE_AGE":
                 findings.append(Finding("SECRETS_STALE_AGE", f"Secrets loaded more than {s.max_age_minutes:g} minute(s) ago: list considered stale.",
                                         "Run /censor refresh."))
+        if s.censor_auxiliary_calls:
+            if not self.aux_hooks_registered:
+                findings.append(Finding("AUX_RESTART_REQUIRED",
+                                        "censor_auxiliary_calls is on but the auxiliary-call hooks were not registered "
+                                        "when Hermes loaded the plugin: auxiliary calls are NOT filtered.",
+                                        "Restart Hermes (these hooks are only registered at load time)."))
+            else:
+                findings.append(Finding("AUXILIARY_NOTICE",
+                                        "Auxiliary calls (compression, title, vision...) are filtered through an "
+                                        "undocumented Hermes side effect that is not verified at run time "
+                                        "(docs/LIMITATIONS.md).", ""))
+        if self._aux_fail:
+            findings.append(Finding("AUX_REQUEST_FAILED_OPEN",
+                                    f"The last auxiliary call was sent UNCENSORED (exception {self._aux_fail}).",
+                                    "Check the Hermes logs (logger \"hermes-censor\"); report the problem."))
         if self._fail:
             findings.append(Finding("REQUEST_FAILED_OPEN", f"The last request was sent UNCENSORED (exception {self._fail}).",
                                     "Check the Hermes logs (logger \"hermes-censor\"); report the problem."))
+        if self._fail or self._aux_fail:
             return Status("ERROR", findings)
         if any(f.code in DEGRADED_CODES for f in findings):
             return Status("DEGRADED", findings)
@@ -448,6 +506,14 @@ class Runtime:
         lines.append(f"  Activity: {a['requests']} request(s) examined, last one: {a['last_secret_replacements']} secret(s) and "
                      f"{a['last_rule_replacements']} rule(s) applied; {a['tool_results']} tool result(s) examined; "
                      f"{a['failopen_count']} filtering failure(s)")
+        if s.enabled:
+            if s.censor_auxiliary_calls:
+                lines.append(f"  Auxiliary calls: filtered; {a['aux_requests']} examined, last one: "
+                             f"{a['aux_last_secret_replacements']} secret(s) and {a['aux_last_rule_replacements']} "
+                             f"rule(s) applied; {a['aux_failopen_count']} filtering failure(s)")
+            else:
+                lines.append("  Auxiliary calls (compression, title, vision...): NOT filtered "
+                             "(censor_auxiliary_calls: false)")
         if verbose:
             c = self._censor.stats
             lines.append(f"  Index: {c.secret_patterns} secret pattern(s), {c.rule_patterns} rule pattern(s); "
